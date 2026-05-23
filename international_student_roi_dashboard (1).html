@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global University ROI Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg-void: #080c12;
+  --bg-surface: #0d1520;
+  --bg-glass: rgba(13,21,32,0.65);
+  --bg-glass2: rgba(255,255,255,0.03);
+  --bg-hover: rgba(255,255,255,0.05);
+  --border: rgba(255,255,255,0.07);
+  --border-accent: rgba(99,179,237,0.25);
+  --text-primary: #e8edf5;
+  --text-secondary: #7b90a8;
+  --text-muted: #3f5268;
+  --accent-blue: #63b3ed;
+  --accent-cyan: #4fd1c5;
+  --accent-amber: #f6ad55;
+  --accent-red: #fc8181;
+  --accent-violet: #b794f4;
+  --accent-green: #68d391;
+  --accent-pink: #f687b3;
+  --grid-line: rgba(255,255,255,0.04);
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --font-body: 'Inter', sans-serif;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin:0; padding:0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background atmosphere */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 10%, rgba(99,179,237,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 80%, rgba(79,209,197,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(183,148,244,0.03) 0%, transparent 60%);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ─── STICKY HEADER ─────────────────────────── */
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8,12,18,0.92);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+}
+
+.header-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 58px;
+  gap: 1rem;
+}
+
+.header-left { display:flex; align-items:center; gap:1rem; }
+
+.header-logo {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+  border-radius: 8px;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-display);
+  font-size:14px; font-weight:800; color:#fff;
+  flex-shrink:0;
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size:15px;
+  font-weight:700;
+  color: var(--text-primary);
+  letter-spacing:-0.01em;
+}
+.header-subtitle {
+  font-size:11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.header-right { display:flex; align-items:center; gap:0.75rem; }
+
+.live-pill {
+  display:flex; align-items:center; gap:5px;
+  background: rgba(104,211,145,0.1);
+  border: 1px solid rgba(104,211,145,0.2);
+  border-radius:99px;
+  padding:3px 10px;
+  font-size:10px;
+  color: var(--accent-green);
+  font-family: var(--font-mono);
+  letter-spacing:0.04em;
+}
+.live-dot {
+  width:5px; height:5px;
+  border-radius:50%;
+  background: var(--accent-green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100%{opacity:1;} 50%{opacity:0.3;}
+}
+
+.btn-export {
+  background: rgba(99,179,237,0.1);
+  border: 1px solid rgba(99,179,237,0.25);
+  color: var(--accent-blue);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size:11px;
+  font-family: var(--font-mono);
+  cursor:pointer;
+  transition: var(--transition);
+  letter-spacing:0.02em;
+}
+.btn-export:hover {
+  background: rgba(99,179,237,0.18);
+  border-color: rgba(99,179,237,0.5);
+}
+
+/* ─── STICKY FILTER BAR ──────────────────────── */
+#filterBar {
+  position: sticky;
+  top: 58px;
+  z-index: 99;
+  background: rgba(8,12,18,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+}
+
+.filter-inner {
+  max-width:1600px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  gap:1.5rem;
+  height:48px;
+  flex-wrap:wrap;
+}
+
+.filter-label {
+  font-size:10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  white-space:nowrap;
+}
+
+.filter-group {
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+}
+
+.region-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size:11px;
+  font-family: var(--font-mono);
+  cursor:pointer;
+  transition: var(--transition);
+  white-space:nowrap;
+}
+.region-btn:hover { border-color: var(--border-accent); color: var(--accent-blue); }
+.region-btn.active {
+  background: rgba(99,179,237,0.12);
+  border-color: rgba(99,179,237,0.4);
+  color: var(--accent-blue);
+}
+
+.filter-divider {
+  width:1px;
+  height:20px;
+  background: var(--border);
+}
+
+.styled-select {
+  appearance:none;
+  background: var(--bg-glass2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 4px 28px 4px 10px;
+  font-size:11px;
+  font-family: var(--font-mono);
+  cursor:pointer;
+  transition: var(--transition);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237b90a8'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position: calc(100% - 8px) center;
+}
+.styled-select:focus { outline:none; border-color: var(--border-accent); color:var(--text-primary); }
+
+.search-wrap {
+  position:relative;
+  margin-left:auto;
+}
+.search-wrap svg {
+  position:absolute;
+  left:9px; top:50%;
+  transform:translateY(-50%);
+  width:12px; height:12px;
+  color: var(--text-muted);
+  pointer-events:none;
+}
+#searchInput {
+  background: var(--bg-glass2);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px 5px 28px;
+  font-size:11px;
+  font-family: var(--font-mono);
+  width: 200px;
+  transition: var(--transition);
+}
+#searchInput::placeholder { color: var(--text-muted); }
+#searchInput:focus { outline:none; border-color: var(--border-accent); width:260px; }
+
+/* ─── MAIN LAYOUT ────────────────────────────── */
+#main {
+  max-width:1600px;
+  margin:0 auto;
+  padding: 1.75rem 2rem 3rem;
+  position:relative;
+  z-index:1;
+}
+
+/* ─── SECTION LABEL ──────────────────────────── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size:10px;
+  color: var(--text-muted);
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  margin-bottom:0.875rem;
+  padding-bottom:0.5rem;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:0.5rem;
+}
+.section-label::before {
+  content:'';
+  width:3px; height:3px;
+  border-radius:50%;
+  background: var(--accent-blue);
+}
+
+/* ─── KPI CARDS ──────────────────────────────── */
+.kpi-grid {
+  display:grid;
+  grid-template-columns: repeat(6,1fr);
+  gap:0.875rem;
+  margin-bottom:1.75rem;
+}
+@media(max-width:1200px){ .kpi-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:700px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+
+.kpi-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  position:relative;
+  overflow:hidden;
+  transition: var(--transition);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  cursor:default;
+}
+.kpi-card::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+  pointer-events:none;
+}
+.kpi-card:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.kpi-tag {
+  font-family: var(--font-mono);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color: var(--text-muted);
+  margin-bottom:0.5rem;
+}
+
+.kpi-value {
+  font-family: var(--font-display);
+  font-size:26px;
+  font-weight:700;
+  color: var(--text-primary);
+  line-height:1;
+  margin-bottom:0.4rem;
+  letter-spacing:-0.02em;
+}
+
+.kpi-sub {
+  font-size:10px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.kpi-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  margin-top:0.5rem;
+  padding:2px 7px;
+  border-radius:99px;
+  font-size:9px;
+  font-family: var(--font-mono);
+  font-weight:500;
+  letter-spacing:0.04em;
+}
+.badge-up { background:rgba(104,211,145,0.12); color:var(--accent-green); border:1px solid rgba(104,211,145,0.2); }
+.badge-warn { background:rgba(246,173,85,0.12); color:var(--accent-amber); border:1px solid rgba(246,173,85,0.2); }
+.badge-info { background:rgba(99,179,237,0.12); color:var(--accent-blue); border:1px solid rgba(99,179,237,0.2); }
+.badge-red { background:rgba(252,129,129,0.12); color:var(--accent-red); border:1px solid rgba(252,129,129,0.2); }
+
+.kpi-accent-bar {
+  position:absolute;
+  bottom:0; left:0; right:0;
+  height:2px;
+  border-radius:0 0 var(--radius) var(--radius);
+}
+
+/* ─── CHART CARDS ────────────────────────────── */
+.charts-row {
+  display:grid;
+  gap:0.875rem;
+  margin-bottom:1.75rem;
+}
+.cols-2 { grid-template-columns:1fr 1fr; }
+.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+.cols-1 { grid-template-columns:1fr; }
+@media(max-width:1024px){ .cols-3{grid-template-columns:1fr 1fr;} .cols-2{grid-template-columns:1fr;} }
+@media(max-width:640px){ .cols-3,.cols-2{grid-template-columns:1fr;} }
+
+.chart-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem 1.1rem;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  position:relative;
+  overflow:hidden;
+  transition: var(--transition);
+}
+.chart-card::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  pointer-events:none;
+}
+.chart-card:hover {
+  border-color: rgba(255,255,255,0.1);
+}
+
+.chart-card-header { margin-bottom:1rem; }
+.chart-card-title {
+  font-family: var(--font-display);
+  font-size:13px;
+  font-weight:600;
+  color: var(--text-primary);
+  letter-spacing:-0.01em;
+  margin-bottom:2px;
+}
+.chart-card-sub {
+  font-size:10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.chart-wrap {
+  position:relative;
+  width:100%;
+}
+.chart-wrap.h280 { height:280px; }
+.chart-wrap.h260 { height:260px; }
+.chart-wrap.h220 { height:220px; }
+.chart-wrap.h320 { height:320px; }
+.chart-wrap.h200 { height:200px; }
+
+.custom-legend {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:10px;
+  font-size:10px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+.legend-item {
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.legend-dot {
+  width:8px; height:8px;
+  border-radius:2px;
+  flex-shrink:0;
+}
+
+/* ─── DATA TABLE ─────────────────────────────── */
+.table-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  margin-bottom:1.75rem;
+}
+.table-card-header {
+  padding:1.1rem 1.4rem;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:0.75rem;
+}
+.table-wrap { overflow-x:auto; }
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:11.5px;
+}
+thead th {
+  padding:8px 12px;
+  text-align:left;
+  font-family: var(--font-mono);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color: var(--text-muted);
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+  background:rgba(0,0,0,0.2);
+}
+tbody td {
+  padding:9px 12px;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  color: var(--text-primary);
+  vertical-align:middle;
+  white-space:nowrap;
+}
+tbody tr:last-child td { border-bottom:none; }
+tbody tr {
+  transition: background var(--transition);
+}
+tbody tr:hover td { background: rgba(255,255,255,0.025); }
+
+.roi-badge {
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  border-radius:99px;
+  font-size:9px;
+  font-family: var(--font-mono);
+  font-weight:500;
+  letter-spacing:0.04em;
+}
+.roi-excellent { background:rgba(104,211,145,0.12); color:var(--accent-green); border:1px solid rgba(104,211,145,0.2); }
+.roi-good { background:rgba(99,179,237,0.12); color:var(--accent-blue); border:1px solid rgba(99,179,237,0.2); }
+.roi-fair { background:rgba(246,173,85,0.12); color:var(--accent-amber); border:1px solid rgba(246,173,85,0.2); }
+
+.country-flag {
+  font-size:14px;
+  margin-right:4px;
+}
+
+/* ─── INSIGHTS SECTION ───────────────────────── */
+.insights-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0.875rem;
+  margin-bottom:1.75rem;
+}
+@media(max-width:900px){ .insights-grid{grid-template-columns:1fr 1fr;} }
+@media(max-width:600px){ .insights-grid{grid-template-columns:1fr;} }
+
+.insight-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding:1.1rem 1.25rem;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  transition: var(--transition);
+  position:relative;
+  overflow:hidden;
+}
+.insight-card:hover { border-color: rgba(255,255,255,0.1); transform:translateY(-1px); }
+.insight-card-accent {
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:3px;
+  border-radius:var(--radius) 0 0 var(--radius);
+}
+.insight-icon {
+  font-size:18px;
+  margin-bottom:0.5rem;
+  display:block;
+}
+.insight-title {
+  font-family: var(--font-display);
+  font-size:12px;
+  font-weight:600;
+  color: var(--text-primary);
+  margin-bottom:0.3rem;
+}
+.insight-body {
+  font-size:11px;
+  color: var(--text-secondary);
+  line-height:1.5;
+}
+.insight-highlight {
+  font-family: var(--font-mono);
+  font-weight:500;
+}
+
+/* ─── FOOTER ─────────────────────────────────── */
+#footer {
+  border-top:1px solid var(--border);
+  padding:1.5rem 2rem;
+  max-width:1600px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:1rem;
+}
+.footer-text {
+  font-family: var(--font-mono);
+  font-size:10px;
+  color: var(--text-muted);
+}
+.footer-meta {
+  display:flex;
+  align-items:center;
+  gap:1.5rem;
+  font-family: var(--font-mono);
+  font-size:10px;
+  color: var(--text-muted);
+}
+.footer-meta span { color: var(--text-secondary); }
+
+/* ─── COUNT LABEL ────────────────────────────── */
+#countBadge {
+  font-family: var(--font-mono);
+  font-size:10px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:99px;
+  padding:3px 10px;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:99px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.2); }
+
+/* ─── ANIMATIONS ─────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.kpi-card  { animation: fadeInUp 0.4s ease both; }
+.kpi-card:nth-child(1){animation-delay:0.05s}
+.kpi-card:nth-child(2){animation-delay:0.1s}
+.kpi-card:nth-child(3){animation-delay:0.15s}
+.kpi-card:nth-child(4){animation-delay:0.2s}
+.kpi-card:nth-child(5){animation-delay:0.25s}
+.kpi-card:nth-child(6){animation-delay:0.3s}
+
+.chart-card,.table-card,.insight-card {
+  animation: fadeInUp 0.5s ease both;
+  animation-delay:0.2s;
+}
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ───────────────────────────────────── -->
+<header id="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="header-logo">ROI</div>
+      <div>
+        <div class="header-title">Global University ROI Dashboard</div>
+        <div class="header-subtitle">25 countries · tuition, cost, salary & break-even analytics</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-pill"><span class="live-dot"></span>LIVE DATA</div>
+      <button class="btn-export" onclick="exportCSV()">↓ Export CSV</button>
+    </div>
+  </div>
+</header>
+
+<!-- ─── FILTER BAR ────────────────────────────────── -->
+<div id="filterBar">
+  <div class="filter-inner">
+    <span class="filter-label">Region</span>
+    <div class="filter-group" id="regionBtns">
+      <button class="region-btn active" data-r="all">All</button>
+      <button class="region-btn" data-r="Europe">Europe</button>
+      <button class="region-btn" data-r="Asia">Asia</button>
+      <button class="region-btn" data-r="Americas">Americas</button>
+      <button class="region-btn" data-r="Oceania">Oceania</button>
+    </div>
+    <div class="filter-divider"></div>
+    <span class="filter-label">Sort</span>
+    <select class="styled-select" id="sortBy" onchange="renderTable()">
+      <option value="breakEven">Break-even ↑</option>
+      <option value="saving">Net saving ↓</option>
+      <option value="salary">Salary ↓</option>
+      <option value="totalCost">Total cost ↑</option>
+    </select>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Search country or university…" oninput="applySearch()">
+    </div>
+  </div>
+</div>
+
+<!-- ─── MAIN ──────────────────────────────────────── -->
+<main id="main">
+
+  <!-- KPI CARDS -->
+  <div class="section-label">Key Metrics</div>
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card">
+      <div class="kpi-tag">Countries</div>
+      <div class="kpi-value" id="kpiCount">25</div>
+      <div class="kpi-sub">destinations tracked</div>
+      <div class="kpi-badge badge-info">↗ Global</div>
+      <div class="kpi-accent-bar" style="background:var(--accent-blue)"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-tag">Avg Tuition / yr</div>
+      <div class="kpi-value" id="kpiTuition">$15.7K</div>
+      <div class="kpi-sub" id="kpiTuitionSub">Range: $0 – $55K</div>
+      <div class="kpi-badge badge-warn">Range Wide</div>
+      <div class="kpi-accent-bar" style="background:var(--accent-amber)"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-tag">Avg Post-grad Salary</div>
+      <div class="kpi-value" id="kpiSalary">$51.8K</div>
+      <div class="kpi-sub" id="kpiSalarySub">Range: $12K – $90K</div>
+      <div class="kpi-badge badge-up">▲ Strong Returns</div>
+      <div class="kpi-accent-bar" style="background:var(--accent-green)"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-tag">Avg Break-even</div>
+      <div class="kpi-value" id="kpiBreakEven">0.83yr</div>
+      <div class="kpi-sub" id="kpiBESub">Best: Germany 0.33yr</div>
+      <div class="kpi-badge badge-up">▲ Fast ROI</div>
+      <div class="kpi-accent-bar" style="background:var(--accent-cyan)"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-tag">Avg Net Saving</div>
+      <div class="kpi-value" id="kpiSaving">$37.5K</div>
+      <div class="kpi-sub" id="kpiSavingSub">Best: Switzerland $68K</div>
+      <div class="kpi-badge badge-up">▲ High ROI</div>
+      <div class="kpi-accent-bar" style="background:var(--accent-violet)"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-tag">Lowest Total Cost</div>
+      <div class="kpi-value" id="kpiLowest">$13.3K</div>
+      <div class="kpi-sub" id="kpiLowestSub">Brazil · Sao Paulo</div>
+      <div class="kpi-badge badge-up">▲ Best Value</div>
+      <div class="kpi-accent-bar" style="background:var(--accent-pink)"></div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Scatter + Break-even -->
+  <div class="section-label">Return on Investment</div>
+  <div class="charts-row cols-2">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Tuition vs Post-grad Salary</div>
+        <div class="chart-card-sub">Bubble size = total annual cost · Top-right = best value</div>
+      </div>
+      <div class="custom-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-blue)"></span>Low tuition (&lt;$20K)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-red)"></span>High tuition (&gt;$20K)</div>
+      </div>
+      <div class="chart-wrap h280"><canvas id="cScatter"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Break-even Years by Country</div>
+        <div class="chart-card-sub">Time to recoup full study investment · Color = speed tier</div>
+      </div>
+      <div class="custom-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-cyan)"></span>&lt;0.5yr Fast</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-amber)"></span>0.5–1yr Moderate</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-red)"></span>&gt;1yr Slow</div>
+      </div>
+      <div class="chart-wrap h280"><canvas id="cBreakEven"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Stacked + Savings -->
+  <div class="section-label">Cost &amp; Savings Analysis</div>
+  <div class="charts-row cols-2">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Annual Cost Breakdown by Country</div>
+        <div class="chart-card-sub">Tuition · Rent · Insurance stacked</div>
+      </div>
+      <div class="custom-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-blue)"></span>Tuition</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-cyan)"></span>Rent (annual)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-amber)"></span>Insurance</div>
+      </div>
+      <div class="chart-wrap h280"><canvas id="cStacked"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Net Annual Savings Ranking</div>
+        <div class="chart-card-sub">Money retained after all study costs</div>
+      </div>
+      <div class="chart-wrap h280"><canvas id="cSavings"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Three smalls -->
+  <div class="section-label">Distribution Analysis</div>
+  <div class="charts-row cols-3">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Salary Distribution</div>
+        <div class="chart-card-sub">Frequency across 25 destinations</div>
+      </div>
+      <div class="chart-wrap h220"><canvas id="cSalaryDist"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Total Cost Distribution</div>
+        <div class="chart-card-sub">Annual investment range groupings</div>
+      </div>
+      <div class="chart-wrap h220"><canvas id="cCostDist"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Spend Composition</div>
+        <div class="chart-card-sub">Tuition vs Rent vs Insurance share</div>
+      </div>
+      <div class="custom-legend" id="doughnutLegend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-blue)"></span>Tuition</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-cyan)"></span>Rent</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-amber)"></span>Insurance</div>
+      </div>
+      <div class="chart-wrap h200"><canvas id="cDoughnut"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Value map + Rent -->
+  <div class="section-label">Value &amp; Living Costs</div>
+  <div class="charts-row cols-2">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">ROI Value Map</div>
+        <div class="chart-card-sub">Salary vs Break-even · Top-right = best ROI</div>
+      </div>
+      <div class="chart-wrap h260"><canvas id="cValueMap"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Monthly Rent by City</div>
+        <div class="chart-card-sub">Cost-of-living proxy across all destinations</div>
+      </div>
+      <div class="chart-wrap h260"><canvas id="cRentBar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 5: Radar full-width -->
+  <div class="section-label">Multi-dimensional Comparison</div>
+  <div class="charts-row cols-1">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">ROI Radar — Top 8 Destinations</div>
+        <div class="chart-card-sub">Normalised scores across 5 dimensions · Higher = better value</div>
+      </div>
+      <div class="custom-legend" id="radarLegend" style="justify-content:center"></div>
+      <div class="chart-wrap h320"><canvas id="cRadar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="section-label">Data Table</div>
+  <div class="table-card">
+    <div class="table-card-header">
+      <div>
+        <div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text-primary);">All Universities</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:2px;">Sortable via filter bar · Searchable globally</div>
+      </div>
+      <span id="countBadge">25 entries</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Country</th>
+            <th>University</th>
+            <th>Tuition/yr</th>
+            <th>Monthly Rent</th>
+            <th>Avg Salary</th>
+            <th>Total Cost</th>
+            <th>Net Saving</th>
+            <th>Break-even</th>
+            <th>ROI</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="section-label">Analyst Insights</div>
+  <div class="insights-grid" id="insightsGrid">
+    <!-- filled by JS -->
+  </div>
+
+</main>
+
+<!-- ─── FOOTER ────────────────────────────────────── -->
+<footer>
+  <div id="footer">
+    <div class="footer-text">Global University ROI Dashboard · 25 Countries · 2024 Data</div>
+    <div class="footer-meta">
+      <div>Source: <span>Aggregated public data</span></div>
+      <div>Built for: <span>Investment-grade analytics</span></div>
+      <div>Powered by: <span>Chart.js 4.4.1</span></div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════
+   DATA
+═══════════════════════════════════════ */
+const RAW = [
+  {country:'India',city:'Mumbai',university:'IIT Bombay',tuition:5000,rent:500,salary:12000,totalCost:12300,saving:6000,breakEven:2.05,region:'Asia',flag:'🇮🇳'},
+  {country:'USA',city:'Cambridge',university:'MIT',tuition:55000,rent:1500,salary:80000,totalCost:74300,saving:62000,breakEven:1.2,region:'Americas',flag:'🇺🇸'},
+  {country:'Canada',city:'Toronto',university:'Univ. of Toronto',tuition:42000,rent:1250,salary:60000,totalCost:58300,saving:45000,breakEven:1.3,region:'Americas',flag:'🇨🇦'},
+  {country:'Australia',city:'Melbourne',university:'Univ. of Melbourne',tuition:41000,rent:1333,salary:65000,totalCost:58300,saving:49000,breakEven:1.19,region:'Oceania',flag:'🇦🇺'},
+  {country:'Singapore',city:'Singapore',university:'NUS',tuition:30000,rent:1167,salary:55000,totalCost:45300,saving:41000,breakEven:1.1,region:'Asia',flag:'🇸🇬'},
+  {country:'UK',city:'Oxford',university:'Univ. of Oxford',tuition:45000,rent:1417,salary:50000,totalCost:63300,saving:33000,breakEven:1.92,region:'Europe',flag:'🇬🇧'},
+  {country:'China',city:'Beijing',university:'Tsinghua Univ.',tuition:10000,rent:750,salary:30000,totalCost:20300,saving:21000,breakEven:0.97,region:'Asia',flag:'🇨🇳'},
+  {country:'Russia',city:'Moscow',university:'Lomonosov MSU',tuition:8000,rent:667,salary:45000,totalCost:17300,saving:37000,breakEven:0.47,region:'Europe',flag:'🇷🇺'},
+  {country:'Germany',city:'Munich',university:'TU Munich',tuition:1000,rent:1000,salary:55000,totalCost:14300,saving:43000,breakEven:0.33,region:'Europe',flag:'🇩🇪'},
+  {country:'France',city:'Paris',university:'Sorbonne',tuition:4000,rent:1167,salary:45000,totalCost:19300,saving:31000,breakEven:0.62,region:'Europe',flag:'🇫🇷'},
+  {country:'Japan',city:'Tokyo',university:'Univ. of Tokyo',tuition:6000,rent:1083,salary:42000,totalCost:20300,saving:29000,breakEven:0.7,region:'Asia',flag:'🇯🇵'},
+  {country:'S. Korea',city:'Seoul',university:'Seoul National Univ.',tuition:7000,rent:917,salary:38000,totalCost:19300,saving:27000,breakEven:0.71,region:'Asia',flag:'🇰🇷'},
+  {country:'UAE',city:'Abu Dhabi',university:'Khalifa Univ.',tuition:12000,rent:1250,salary:50000,totalCost:28300,saving:35000,breakEven:0.81,region:'Asia',flag:'🇦🇪'},
+  {country:'Netherlands',city:'Delft',university:'TU Delft',tuition:18000,rent:1083,salary:55000,totalCost:32300,saving:42000,breakEven:0.77,region:'Europe',flag:'🇳🇱'},
+  {country:'Switzerland',city:'Zurich',university:'ETH Zurich',tuition:2000,rent:1833,salary:90000,totalCost:25300,saving:68000,breakEven:0.37,region:'Europe',flag:'🇨🇭'},
+  {country:'New Zealand',city:'Auckland',university:'Univ. of Auckland',tuition:32000,rent:1167,salary:50000,totalCost:47300,saving:36000,breakEven:1.31,region:'Oceania',flag:'🇳🇿'},
+  {country:'Ireland',city:'Dublin',university:'Trinity College',tuition:25000,rent:1167,salary:55000,totalCost:40300,saving:41000,breakEven:0.98,region:'Europe',flag:'🇮🇪'},
+  {country:'Italy',city:'Milan',university:'Politecnico Milano',tuition:5000,rent:1000,salary:45000,totalCost:18300,saving:33000,breakEven:0.55,region:'Europe',flag:'🇮🇹'},
+  {country:'Spain',city:'Barcelona',university:'Univ. of Barcelona',tuition:5000,rent:1000,salary:45000,totalCost:18300,saving:33000,breakEven:0.55,region:'Europe',flag:'🇪🇸'},
+  {country:'Sweden',city:'Lund',university:'Lund University',tuition:15000,rent:1083,salary:50000,totalCost:29300,saving:37000,breakEven:0.79,region:'Europe',flag:'🇸🇪'},
+  {country:'Norway',city:'Oslo',university:'Univ. of Oslo',tuition:0,rent:1500,salary:60000,totalCost:19300,saving:42000,breakEven:0.46,region:'Europe',flag:'🇳🇴'},
+  {country:'Malaysia',city:'Kuala Lumpur',university:'Univ. of Malaya',tuition:9000,rent:667,salary:45000,totalCost:18300,saving:37000,breakEven:0.49,region:'Asia',flag:'🇲🇾'},
+  {country:'Thailand',city:'Bangkok',university:'Chulalongkorn Univ.',tuition:6000,rent:583,salary:45000,totalCost:14300,saving:38000,breakEven:0.38,region:'Asia',flag:'🇹🇭'},
+  {country:'Brazil',city:'Sao Paulo',university:'Univ. of Sao Paulo',tuition:3000,rent:750,salary:45000,totalCost:13300,saving:36000,breakEven:0.37,region:'Americas',flag:'🇧🇷'},
+  {country:'South Africa',city:'Cape Town',university:'UCT',tuition:7000,rent:750,salary:45000,totalCost:17300,saving:36000,breakEven:0.48,region:'Americas',flag:'🇿🇦'}
+];
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let filteredData = [...RAW];
+let activeRegion = 'all';
+let searchTerm = '';
+let charts = {};
+
+/* ═══════════════════════════════════════
+   COLORS & CHART DEFAULTS
+═══════════════════════════════════════ */
+const C = {
+  blue:'#63b3ed', cyan:'#4fd1c5', amber:'#f6ad55',
+  red:'#fc8181', violet:'#b794f4', green:'#68d391',
+  pink:'#f687b3', teal:'#38b2ac', orange:'#ed8936',
+  indigo:'#7f9cf5'
+};
+const PALETTE = [C.blue,C.cyan,C.amber,C.red,C.violet,C.green,C.pink,C.teal,C.orange,C.indigo,
+  '#90cdf4','#b2f5ea','#fbd38d','#feb2b2','#d6bcfa','#9ae6b4','#fbb6ce','#81e6d9','#fbd38d','#c3dafe',
+  '#76e4f7','#f6e05e','#fc8181','#68d391','#b794f4'];
+
+const GRID = 'rgba(255,255,255,0.04)';
+const TICK = { color:'#3f5268', font:{ family:'DM Mono, monospace', size:9 } };
+const AXIS_TITLE = { color:'#7b90a8', font:{ family:'DM Mono, monospace', size:9 } };
+
+function fmt(n) { return n>=1000 ? '$'+Math.round(n/1000)+'K' : '$'+n; }
+function avg(arr) { return arr.reduce((s,v)=>s+v,0)/arr.length; }
+
+Chart.defaults.color = '#7b90a8';
+Chart.defaults.font.family = 'DM Mono, monospace';
+
+/* ═══════════════════════════════════════
+   FILTER & SEARCH
+═══════════════════════════════════════ */
+document.getElementById('regionBtns').addEventListener('click', e => {
+  const btn = e.target.closest('.region-btn');
+  if (!btn) return;
+  activeRegion = btn.dataset.r;
+  document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+});
+
+function applySearch() {
+  searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+  applyFilters();
+}
+
+function applyFilters() {
+  filteredData = RAW.filter(d => {
+    const regionOk = activeRegion === 'all' || d.region === activeRegion;
+    const searchOk = !searchTerm ||
+      d.country.toLowerCase().includes(searchTerm) ||
+      d.university.toLowerCase().includes(searchTerm) ||
+      d.city.toLowerCase().includes(searchTerm);
+    return regionOk && searchOk;
+  });
+  renderAll();
+}
+
+/* ═══════════════════════════════════════
+   CHART UTILITIES
+═══════════════════════════════════════ */
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function makeGrid() {
+  return { grid:{ color:GRID, drawBorder:false }, ticks: TICK };
+}
+
+/* ═══════════════════════════════════════
+   KPI UPDATER
+═══════════════════════════════════════ */
+function updateKPIs() {
+  const d = filteredData;
+  if (!d.length) return;
+  document.getElementById('kpiCount').textContent = d.length;
+  const avgT = avg(d.map(x=>x.tuition));
+  const minT = Math.min(...d.map(x=>x.tuition));
+  const maxT = Math.max(...d.map(x=>x.tuition));
+  document.getElementById('kpiTuition').textContent = fmt(avgT);
+  document.getElementById('kpiTuitionSub').textContent = `Range: ${fmt(minT)} – ${fmt(maxT)}`;
+  const avgS = avg(d.map(x=>x.salary));
+  const minS = Math.min(...d.map(x=>x.salary));
+  const maxS = Math.max(...d.map(x=>x.salary));
+  document.getElementById('kpiSalary').textContent = fmt(avgS);
+  document.getElementById('kpiSalarySub').textContent = `Range: ${fmt(minS)} – ${fmt(maxS)}`;
+  const avgBE = avg(d.map(x=>x.breakEven));
+  const bestBE = d.reduce((a,b)=>a.breakEven<b.breakEven?a:b);
+  document.getElementById('kpiBreakEven').textContent = avgBE.toFixed(2)+'yr';
+  document.getElementById('kpiBESub').textContent = `Best: ${bestBE.country} ${bestBE.breakEven.toFixed(2)}yr`;
+  const avgSav = avg(d.map(x=>x.saving));
+  const bestSav = d.reduce((a,b)=>a.saving>b.saving?a:b);
+  document.getElementById('kpiSaving').textContent = fmt(avgSav);
+  document.getElementById('kpiSavingSub').textContent = `Best: ${bestSav.country} ${fmt(bestSav.saving)}`;
+  const cheapest = d.reduce((a,b)=>a.totalCost<b.totalCost?a:b);
+  document.getElementById('kpiLowest').textContent = fmt(cheapest.totalCost);
+  document.getElementById('kpiLowestSub').textContent = `${cheapest.country} · ${cheapest.city}`;
+}
+
+/* ═══════════════════════════════════════
+   CHART RENDERERS
+═══════════════════════════════════════ */
+function renderScatter() {
+  destroyChart('cScatter');
+  const ctx = document.getElementById('cScatter').getContext('2d');
+  const datasets = filteredData.map(d => ({
+    label: d.country,
+    data: [{ x: d.tuition, y: d.salary, r: Math.max(5, d.totalCost/4200) }],
+    backgroundColor: (d.tuition > 20000 ? C.red : C.blue) + 'AA',
+    borderColor: d.tuition > 20000 ? C.red : C.blue,
+    borderWidth: 1.5
+  }));
+  charts['cScatter'] = new Chart(ctx, {
+    type:'bubble',
+    data:{ datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:600 },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+          callbacks:{ label: c => `${c.dataset.label}: Tuition ${fmt(c.raw.x)} · Salary ${fmt(c.raw.y)}` }
+        }
+      },
+      scales:{
+        x:{ ...makeGrid(), title:{ display:true, text:'Annual Tuition (USD)', ...AXIS_TITLE }, ticks:{ ...TICK, callback:v=>fmt(v) }, min:-2000, max:62000 },
+        y:{ ...makeGrid(), title:{ display:true, text:'Avg Post-grad Salary (USD)', ...AXIS_TITLE }, ticks:{ ...TICK, callback:v=>fmt(v) }, min:0, max:100000 }
+      }
+    }
+  });
+}
+
+function renderBreakEven() {
+  destroyChart('cBreakEven');
+  const sorted = [...filteredData].sort((a,b)=>a.breakEven-b.breakEven);
+  const ctx = document.getElementById('cBreakEven').getContext('2d');
+  charts['cBreakEven'] = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: sorted.map(d=>d.country),
+      datasets:[{
+        label:'Break-even (years)',
+        data: sorted.map(d=>d.breakEven),
+        backgroundColor: sorted.map(d=> d.breakEven<0.5 ? C.cyan+'BB' : d.breakEven<1 ? C.amber+'BB' : C.red+'BB'),
+        borderRadius:3, barThickness:10
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      animation:{ duration:700 },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+          callbacks:{ label: c => `${c.raw.toFixed(2)} years` }
+        }
+      },
+      scales:{
+        x:{ ...makeGrid(), title:{ display:true, text:'Years to Break Even', ...AXIS_TITLE }, ticks:TICK },
+        y:{ grid:{ display:false }, ticks:{ ...TICK, font:{ family:'DM Mono, monospace', size:9 } } }
+      }
+    }
+  });
+}
+
+function renderStacked() {
+  destroyChart('cStacked');
+  const sorted = [...filteredData].sort((a,b)=>b.tuition-a.tuition);
+  const ctx = document.getElementById('cStacked').getContext('2d');
+  charts['cStacked'] = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: sorted.map(d=>d.country),
+      datasets:[
+        { label:'Tuition', data:sorted.map(d=>d.tuition), backgroundColor:C.blue+'CC', borderRadius:0 },
+        { label:'Rent (annual)', data:sorted.map(d=>d.rent*12), backgroundColor:C.cyan+'CC', borderRadius:0 },
+        { label:'Insurance', data:sorted.map(d=>1000), backgroundColor:C.amber+'CC', borderRadius:0 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:650 },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+          callbacks:{ label: c => `${c.dataset.label}: ${fmt(c.raw)}` }
+        }
+      },
+      scales:{
+        x:{ stacked:true, ...makeGrid(), ticks:{ ...TICK, maxRotation:55 } },
+        y:{ stacked:true, ...makeGrid(), ticks:{ ...TICK, callback:v=>fmt(v) } }
+      }
+    }
+  });
+}
+
+function renderSavings() {
+  destroyChart('cSavings');
+  const sorted = [...filteredData].sort((a,b)=>b.saving-a.saving);
+  const ctx = document.getElementById('cSavings').getContext('2d');
+  charts['cSavings'] = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: sorted.map(d=>d.country),
+      datasets:[{
+        label:'Net Annual Saving',
+        data: sorted.map(d=>d.saving),
+        backgroundColor: sorted.map((_,i)=>PALETTE[i%PALETTE.length]+'BB'),
+        borderRadius:3, barThickness:12
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:650 },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+          callbacks:{ label: c => `${fmt(c.raw)}/yr saved` }
+        }
+      },
+      scales:{
+        x:{ ...makeGrid(), ticks:{ ...TICK, maxRotation:55 } },
+        y:{ ...makeGrid(), ticks:{ ...TICK, callback:v=>fmt(v) } }
+      }
+    }
+  });
+}
+
+function renderSalaryDist() {
+  destroyChart('cSalaryDist');
+  const buckets = ['< $30K','$30–45K','$45–60K','$60–80K','$80K+'];
+  const colors = [C.red, C.amber, C.blue, C.cyan, C.green];
+  const counts = [0,0,0,0,0];
+  filteredData.forEach(d => {
+    if (d.salary<30000) counts[0]++;
+    else if (d.salary<45000) counts[1]++;
+    else if (d.salary<60000) counts[2]++;
+    else if (d.salary<80000) counts[3]++;
+    else counts[4]++;
+  });
+  const ctx = document.getElementById('cSalaryDist').getContext('2d');
+  charts['cSalaryDist'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:buckets, datasets:[{ data:counts, backgroundColor:colors.map(c=>c+'BB'), borderRadius:4, barThickness:28 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:600 },
+      plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1 } },
+      scales:{ x:{ ...makeGrid(), ticks:TICK }, y:{ ...makeGrid(), ticks:{ ...TICK, stepSize:1 } } }
+    }
+  });
+}
+
+function renderCostDist() {
+  destroyChart('cCostDist');
+  const buckets = ['< $15K','$15–30K','$30–50K','$50K+'];
+  const colors = [C.green, C.blue, C.amber, C.red];
+  const counts = [0,0,0,0];
+  filteredData.forEach(d => {
+    if (d.totalCost<15000) counts[0]++;
+    else if (d.totalCost<30000) counts[1]++;
+    else if (d.totalCost<50000) counts[2]++;
+    else counts[3]++;
+  });
+  const ctx = document.getElementById('cCostDist').getContext('2d');
+  charts['cCostDist'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:buckets, datasets:[{ data:counts, backgroundColor:colors.map(c=>c+'BB'), borderRadius:4, barThickness:32 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:600 },
+      plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1 } },
+      scales:{ x:{ ...makeGrid(), ticks:TICK }, y:{ ...makeGrid(), ticks:{ ...TICK, stepSize:1 } } }
+    }
+  });
+}
+
+function renderDoughnut() {
+  destroyChart('cDoughnut');
+  const totalTuition = filteredData.reduce((s,d)=>s+d.tuition,0);
+  const totalRent = filteredData.reduce((s,d)=>s+d.rent*12,0);
+  const totalIns = filteredData.length*1000;
+  const total = totalTuition+totalRent+totalIns;
+  const ctx = document.getElementById('cDoughnut').getContext('2d');
+  charts['cDoughnut'] = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Tuition','Annual Rent','Insurance'],
+      datasets:[{
+        data:[totalTuition,totalRent,totalIns],
+        backgroundColor:[C.blue+'CC', C.cyan+'CC', C.amber+'CC'],
+        borderColor:'rgba(8,12,18,0.8)',
+        borderWidth:2, hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      cutout:'65%',
+      animation:{ duration:700 },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+          callbacks:{ label: c => `${c.label}: ${Math.round(c.parsed/total*100)}%` }
+        }
+      }
+    }
+  });
+}
+
+function renderValueMap() {
+  destroyChart('cValueMap');
+  const ctx = document.getElementById('cValueMap').getContext('2d');
+  charts['cValueMap'] = new Chart(ctx, {
+    type:'scatter',
+    data:{ datasets:[{
+      label:'Country',
+      data: filteredData.map(d=>({ x:d.breakEven, y:d.salary, label:d.country })),
+      backgroundColor: C.violet+'99',
+      borderColor: C.violet,
+      pointRadius:6, pointHoverRadius:9,
+      pointStyle:'circle'
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:600 },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+          callbacks:{ label: c => `${c.raw.label} · BE: ${c.raw.x.toFixed(2)}yr · Salary: ${fmt(c.raw.y)}` }
+        }
+      },
+      scales:{
+        x:{ ...makeGrid(), title:{ display:true, text:'Break-even (years)', ...AXIS_TITLE }, ticks:{ ...TICK, callback:v=>v.toFixed(1) }, min:0, max:2.3 },
+        y:{ ...makeGrid(), title:{ display:true, text:'Avg Post-grad Salary (USD)', ...AXIS_TITLE }, ticks:{ ...TICK, callback:v=>fmt(v) } }
+      }
+    }
+  });
+}
+
+function renderRentBar() {
+  destroyChart('cRentBar');
+  const sorted = [...filteredData].sort((a,b)=>b.rent-a.rent);
+  const ctx = document.getElementById('cRentBar').getContext('2d');
+  charts['cRentBar'] = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: sorted.map(d=>d.city),
+      datasets:[{
+        label:'Monthly Rent',
+        data: sorted.map(d=>d.rent),
+        backgroundColor: sorted.map((_,i)=>PALETTE[i%PALETTE.length]+'BB'),
+        borderRadius:3, barThickness:11
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:600 },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'rgba(8,12,18,0.95)', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+          callbacks:{ label: c => `$${c.raw.toLocaleString()}/mo` }
+        }
+      },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ ...TICK, maxRotation:60, font:{ family:'DM Mono, monospace', size:8 } } },
+        y:{ ...makeGrid(), ticks:{ ...TICK, callback:v=>'$'+v } }
+      }
+    }
+  });
+}
+
+function renderRadar() {
+  destroyChart('cRadar');
+  const top8 = [...filteredData].sort((a,b)=>a.breakEven-b.breakEven).slice(0,8);
+  if (!top8.length) return;
+  const maxSal = Math.max(...top8.map(d=>d.salary));
+  const maxSav = Math.max(...top8.map(d=>d.saving));
+  const maxCost = Math.max(...top8.map(d=>d.totalCost));
+  const radarColors = [C.blue,C.cyan,C.amber,C.red,C.violet,C.green,C.pink,C.teal];
+  const datasets = top8.map((d,i)=>({
+    label: d.country,
+    data:[
+      Math.round((d.salary/maxSal)*100),
+      Math.round((1-d.breakEven/2.1)*100),
+      Math.round((d.saving/maxSav)*100),
+      Math.round(((maxCost-d.totalCost)/maxCost)*100),
+      Math.round((1-d.rent/1833)*100)
+    ],
+    borderColor: radarColors[i],
+    backgroundColor: radarColors[i]+'18',
+    borderWidth:1.5,
+    pointRadius:3,
+    pointBackgroundColor: radarColors[i]
+  }));
+  const legend = document.getElementById('radarLegend');
+  legend.innerHTML = top8.map((d,i)=>`
+    <div class="legend-item"><span class="legend-dot" style="background:${radarColors[i]}"></span>${d.flag} ${d.country}</div>
+  `).join('');
+  const ctx = document.getElementById('cRadar').getContext('2d');
+  charts['cRadar'] = new Chart(ctx, {
+    type:'radar',
+    data:{
+      labels:['Salary','Fast Break-even','Net Saving','Low Cost','Low Rent'],
+      datasets
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:800 },
+      plugins:{ legend:{ display:false } },
+      scales:{
+        r:{
+          min:0, max:100,
+          ticks:{ display:false, stepSize:25 },
+          grid:{ color:GRID },
+          pointLabels:{
+            font:{ family:'DM Mono, monospace', size:10 },
+            color:'#7b90a8'
+          },
+          angleLines:{ color:GRID }
+        }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════
+   TABLE
+═══════════════════════════════════════ */
+function renderTable() {
+  const sortKey = document.getElementById('sortBy').value;
+  const ascending = ['breakEven','totalCost'].includes(sortKey);
+  const sorted = [...filteredData].sort((a,b)=> ascending ? a[sortKey]-b[sortKey] : b[sortKey]-a[sortKey]);
+
+  document.getElementById('countBadge').textContent = sorted.length + ' entries';
+
+  document.getElementById('tableBody').innerHTML = sorted.map(d => {
+    const roi = d.breakEven < 0.5 ? ['roi-excellent','Excellent'] :
+                d.breakEven < 1.0 ? ['roi-good','Good'] : ['roi-fair','Fair'];
+    const savColor = d.saving > 40000 ? 'var(--accent-green)' : d.saving > 25000 ? 'var(--accent-cyan)' : 'var(--text-secondary)';
+    return `<tr>
+      <td><span class="country-flag">${d.flag}</span>${d.country}</td>
+      <td style="color:var(--text-secondary);font-family:var(--font-mono);font-size:10px;">${d.university}</td>
+      <td style="font-family:var(--font-mono);">${fmt(d.tuition)}</td>
+      <td style="font-family:var(--font-mono);">$${d.rent.toLocaleString()}</td>
+      <td style="font-weight:600;font-family:var(--font-mono);">${fmt(d.salary)}</td>
+      <td style="font-family:var(--font-mono);">${fmt(d.totalCost)}</td>
+      <td style="color:${savColor};font-weight:600;font-family:var(--font-mono);">${fmt(d.saving)}</td>
+      <td style="font-family:var(--font-mono);">${d.breakEven.toFixed(2)}yr</td>
+      <td><span class="roi-badge ${roi[0]}">${roi[1]}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════
+   AUTO INSIGHTS
+═══════════════════════════════════════ */
+function renderInsights() {
+  const d = filteredData;
+  if (!d.length) return;
+  const best = d.reduce((a,b)=>a.breakEven<b.breakEven?a:b);
+  const highest = d.reduce((a,b)=>a.saving>b.saving?a:b);
+  const cheapest = d.reduce((a,b)=>a.totalCost<b.totalCost?a:b);
+  const priciest = d.reduce((a,b)=>a.totalCost>b.totalCost?a:b);
+  const topSal = d.reduce((a,b)=>a.salary>b.salary?a:b);
+  const europe = d.filter(x=>x.region==='Europe');
+  const euroAvgBE = europe.length ? avg(europe.map(x=>x.breakEven)) : null;
+
+  const insights = [
+    {
+      icon:'⚡',
+      color: C.cyan,
+      title: `Fastest ROI: ${best.flag} ${best.country}`,
+      body: `<span class="insight-highlight" style="color:${C.cyan}">${best.country}</span> (${best.university}) achieves break-even in just <span class="insight-highlight" style="color:${C.cyan}">${best.breakEven.toFixed(2)} years</span> — among the fastest globally, driven by near-zero tuition.`
+    },
+    {
+      icon:'💰',
+      color: C.green,
+      title: `Highest Saver: ${highest.flag} ${highest.country}`,
+      body: `<span class="insight-highlight" style="color:${C.green}">${highest.country}</span> graduates pocket <span class="insight-highlight" style="color:${C.green}">${fmt(highest.saving)}/yr</span> net after all costs — the strongest absolute return in the dataset.`
+    },
+    {
+      icon:'🎓',
+      color: C.blue,
+      title: `Best Value Destination: ${cheapest.flag} ${cheapest.country}`,
+      body: `Total annual cost of just <span class="insight-highlight" style="color:${C.blue}">${fmt(cheapest.totalCost)}</span> at ${cheapest.university} makes ${cheapest.country} the most affordable destination for international students.`
+    },
+    {
+      icon:'💸',
+      color: C.red,
+      title: `Most Expensive: ${priciest.flag} ${priciest.country}`,
+      body: `<span class="insight-highlight" style="color:${C.red}">${priciest.country}</span> demands <span class="insight-highlight" style="color:${C.red}">${fmt(priciest.totalCost)}/yr</span> — nearly ${Math.round(priciest.totalCost/cheapest.totalCost)}× the cheapest destination — primarily tuition-driven.`
+    },
+    {
+      icon:'🏆',
+      color: C.violet,
+      title: `Top Salary: ${topSal.flag} ${topSal.country}`,
+      body: `<span class="insight-highlight" style="color:${C.violet}">${topSal.country}</span> offers the highest post-grad salary at <span class="insight-highlight" style="color:${C.violet}">${fmt(topSal.salary)}/yr</span>, making it a premium destination for career-focused students.`
+    },
+    ...(euroAvgBE ? [{
+      icon:'🌍',
+      color: C.amber,
+      title: 'Europe Leads on ROI Efficiency',
+      body: `European destinations average just <span class="insight-highlight" style="color:${C.amber}">${euroAvgBE.toFixed(2)}yr</span> break-even vs the global average. Germany, Norway, and Switzerland combine low/zero tuition with strong salaries.`
+    }] : [])
+  ];
+
+  document.getElementById('insightsGrid').innerHTML = insights.map(ins => `
+    <div class="insight-card" style="padding-left:1.5rem;">
+      <div class="insight-card-accent" style="background:${ins.color}"></div>
+      <span class="insight-icon">${ins.icon}</span>
+      <div class="insight-title">${ins.title}</div>
+      <div class="insight-body">${ins.body}</div>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════
+   CSV EXPORT
+═══════════════════════════════════════ */
+function exportCSV() {
+  const headers = ['Country','City','University','Region','Tuition/yr','Monthly Rent','Avg Salary','Total Cost','Net Saving','Break-even (yr)'];
+  const rows = filteredData.map(d => [
+    d.country, d.city, d.university, d.region,
+    d.tuition, d.rent, d.salary, d.totalCost, d.saving, d.breakEven.toFixed(2)
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'university_roi_data.csv';
+  a.click();
+}
+
+/* ═══════════════════════════════════════
+   RENDER ALL
+═══════════════════════════════════════ */
+function renderAll() {
+  updateKPIs();
+  renderScatter();
+  renderBreakEven();
+  renderStacked();
+  renderSavings();
+  renderSalaryDist();
+  renderCostDist();
+  renderDoughnut();
+  renderValueMap();
+  renderRentBar();
+  renderRadar();
+  renderTable();
+  renderInsights();
+}
+
+renderAll();
+</script>
+</body>
+</html>
